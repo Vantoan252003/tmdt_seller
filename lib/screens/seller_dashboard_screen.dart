@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import '../services/shop_service.dart';
+import '../services/stats_service.dart';
 import '../models/shop.dart';
+import '../models/seller_stats.dart';
 import 'product_management_screen.dart';
 import 'add_product_screen.dart';
 import 'create_shop_screen.dart';
+import 'report_screen.dart';
 
 class SellerDashboardScreen extends StatefulWidget {
   const SellerDashboardScreen({super.key});
@@ -14,6 +17,7 @@ class SellerDashboardScreen extends StatefulWidget {
 
 class _SellerDashboardScreenState extends State<SellerDashboardScreen> with TickerProviderStateMixin {
   Shop? _shop;
+  SellerStats? _sellerStats;
   bool _isLoading = true;
   Map<String, dynamic> _stats = {
     'totalProducts': 0,
@@ -47,21 +51,34 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> with Tick
     final shopResult = await ShopService.getMyShop();
     print('Shop result: $shopResult');
     
-    setState(() {
-      if (shopResult['success'] == true) {
-        _shop = shopResult['data'];
-        print('Shop loaded: ${_shop?.shopName}');
-        // Update stats from shop data
-        _stats = {
-          'totalProducts': _shop?.totalProducts ?? 0,
-          'totalOrders': _shop?.totalOrders ?? 0,
-          'totalRevenue': 0.0,
-          'averageRating': _shop?.rating ?? 0.0,
-        };
-      } else {
-        print('Failed to load shop: ${shopResult['message']}');
-        _shop = null;
+    if (shopResult['success'] == true) {
+      _shop = shopResult['data'];
+      print('Shop loaded: ${_shop?.shopName}');
+      
+      // Load stats from API
+      if (_shop != null) {
+        final statsResult = await StatsService.getSellerStats(_shop!.shopId);
+        if (statsResult['success'] == true) {
+          _sellerStats = statsResult['data'];
+          print('Stats loaded successfully');
+          
+          // Update stats from API data
+          setState(() {
+            _stats = {
+              'totalProducts': _sellerStats!.overview.totalProducts,
+              'totalOrders': _sellerStats!.overview.totalOrders,
+              'totalRevenue': _sellerStats!.overview.totalRevenue,
+              'averageRating': _sellerStats!.overview.averageRating,
+            };
+          });
+        }
       }
+    } else {
+      print('Failed to load shop: ${shopResult['message']}');
+      _shop = null;
+    }
+    
+    setState(() {
       _isLoading = false;
     });
     _fadeController.forward();
@@ -654,8 +671,14 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> with Tick
               builder: (context) => AddProductScreen(shopId: _shop!.shopId),
             ),
           ).then((_) => _loadData());
+        } else if (title == 'Báo cáo') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ReportScreen(shopId: _shop!.shopId),
+            ),
+          );
         }
-        // TODO: Navigate to other screens
       },
       borderRadius: BorderRadius.circular(16),
       child: Container(
@@ -703,6 +726,8 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> with Tick
   }
 
   Widget _buildRecentActivity() {
+    final recentReviews = _sellerStats?.reviewStats.recentReviews ?? [];
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -710,28 +735,128 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> with Tick
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
-              'Hoạt động gần đây',
+              'Đánh giá gần đây',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: Color(0xFF2D3748),
               ),
             ),
-            TextButton(
-              onPressed: () {},
-              child: const Text(
-                'Xem tất cả',
-                style: TextStyle(
-                  color: Color(0xFF667EEA),
-                  fontWeight: FontWeight.w500,
+            if (recentReviews.isNotEmpty)
+              TextButton(
+                onPressed: () {
+                  if (_shop != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ReportScreen(shopId: _shop!.shopId),
+                      ),
+                    );
+                  }
+                },
+                child: const Text(
+                  'Xem tất cả',
+                  style: TextStyle(
+                    color: Color(0xFF667EEA),
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
-            ),
           ],
         ),
         const SizedBox(height: 16),
-        _buildEmptyActivityState(),
+        recentReviews.isEmpty
+            ? _buildEmptyActivityState()
+            : Column(
+                children: recentReviews.take(3).map((review) => _buildReviewCard(review)).toList(),
+              ),
       ],
+    );
+  }
+  
+  Widget _buildReviewCard(RecentReview review) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: const Color(0xFF667EEA).withOpacity(0.1),
+                  child: Text(
+                    review.userName[0].toUpperCase(),
+                    style: const TextStyle(
+                      color: Color(0xFF667EEA),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        review.userName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          ...List.generate(5, (index) {
+                            return Icon(
+                              index < review.rating ? Icons.star : Icons.star_border,
+                              size: 14,
+                              color: Colors.amber,
+                            );
+                          }),
+                          const SizedBox(width: 8),
+                          Text(
+                            review.createdAt,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              review.productName,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              review.comment,
+              style: const TextStyle(
+                fontSize: 13,
+                height: 1.4,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
     );
   }
 

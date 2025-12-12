@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/shop.dart';
@@ -157,6 +158,58 @@ class ShopService {
         return {'success': true, 'data': shop, 'message': data['message']};
       } else {
         return {'success': false, 'message': data['message'] ?? 'Không thể cập nhật cửa hàng'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Lỗi kết nối: $e'};
+    }
+  }
+
+  // Upload logo
+  static Future<Map<String, dynamic>> uploadLogo(File imageFile) async {
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse(ApiEndpoints.uploadShopLogo),
+      );
+
+      request.files.add(
+        await http.MultipartFile.fromPath('file', imageFile.path),
+      );
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        return {'success': true, 'data': data['data'], 'message': data['message']};
+      } else {
+        return {'success': false, 'message': data['message'] ?? 'Không thể upload logo'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Lỗi kết nối: $e'};
+    }
+  }
+
+  // Upload banner
+  static Future<Map<String, dynamic>> uploadBanner(File imageFile) async {
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse(ApiEndpoints.uploadShopBanner),
+      );
+
+      request.files.add(
+        await http.MultipartFile.fromPath('file', imageFile.path),
+      );
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        return {'success': true, 'data': data['data'], 'message': data['message']};
+      } else {
+        return {'success': false, 'message': data['message'] ?? 'Không thể upload banner'};
       }
     } catch (e) {
       return {'success': false, 'message': 'Lỗi kết nối: $e'};
