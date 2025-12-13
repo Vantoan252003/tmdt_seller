@@ -14,6 +14,7 @@ class Order {
   final String recipientName;
   final String recipientPhone;
   final String? note;
+  final String? voucherCode;
   final String createdAt;
   final String updatedAt;
 
@@ -33,6 +34,7 @@ class Order {
     required this.recipientName,
     required this.recipientPhone,
     this.note,
+    this.voucherCode,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -54,6 +56,7 @@ class Order {
       recipientName: json['recipientName'] ?? '',
       recipientPhone: json['recipientPhone'] ?? '',
       note: json['note'],
+      voucherCode: json['voucherCode'],
       createdAt: json['createdAt'] ?? '',
       updatedAt: json['updatedAt'] ?? '',
     );
@@ -76,6 +79,7 @@ class Order {
       'recipientName': recipientName,
       'recipientPhone': recipientPhone,
       'note': note,
+      'voucherCode': voucherCode,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
     };

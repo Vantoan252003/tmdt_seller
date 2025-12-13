@@ -1,6 +1,6 @@
 class ApiEndpoints {
   // Base URL
-  static const String baseUrl = 'http://192.168.0.102:8080/api';
+  static const String baseUrl = 'http://192.168.31.96:8080/api';
   
   // Auth endpoints
   static const String login = '$baseUrl/auth/login';
@@ -71,4 +71,12 @@ class ApiEndpoints {
   static String shopById(String id) => '$baseUrl/shops/$id';
   static const String uploadShopLogo = '$baseUrl/shops/upload-logo';
   static const String uploadShopBanner = '$baseUrl/shops/upload-banner';
+
+  // Seller Stats endpoints
+  static String sellerStats(String shopId) => '$baseUrl/seller/stats/$shopId';
+
+  // Voucher endpoints
+  static const String createShopVoucher = '$baseUrl/vouchers/shop/create';
+  static const String myShopVouchers = '$baseUrl/vouchers/shop/my-vouchers';
+  static String shopVouchers(String shopId) => '$baseUrl/vouchers/shop/$shopId';
 }

@@ -7,6 +7,7 @@ import 'product_management_screen.dart';
 import 'add_product_screen.dart';
 import 'create_shop_screen.dart';
 import 'report_screen.dart';
+import 'voucher_management_screen.dart';
 
 class SellerDashboardScreen extends StatefulWidget {
   const SellerDashboardScreen({super.key});
@@ -605,11 +606,11 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> with Tick
         'bgColor': const Color(0xFFF0FFF4),
       },
       {
-        'icon': Icons.shopping_bag_rounded,
-        'title': 'Đơn hàng',
-        'subtitle': 'Quản lý đơn hàng',
-        'color': const Color(0xFFED8936),
-        'bgColor': const Color(0xFFFFFAF0),
+        'icon': Icons.card_giftcard_rounded,
+        'title': 'Voucher',
+        'subtitle': 'Quản lý mã giảm giá',
+        'color': const Color(0xFFE53E3E),
+        'bgColor': const Color(0xFFFFF5F5),
       },
       {
         'icon': Icons.analytics_rounded,
@@ -671,6 +672,13 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> with Tick
               builder: (context) => AddProductScreen(shopId: _shop!.shopId),
             ),
           ).then((_) => _loadData());
+        } else if (title == 'Voucher') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const VoucherManagementScreen(),
+            ),
+          );
         } else if (title == 'Báo cáo') {
           Navigator.push(
             context,
