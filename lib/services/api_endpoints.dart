@@ -79,4 +79,21 @@ class ApiEndpoints {
   static const String createShopVoucher = '$baseUrl/vouchers/shop/create';
   static const String myShopVouchers = '$baseUrl/vouchers/shop/my-vouchers';
   static String shopVouchers(String shopId) => '$baseUrl/vouchers/shop/$shopId';
+
+  // Notification endpoints
+  static const String notifications = '$baseUrl/notifications';
+  static const String unreadCount = '$baseUrl/notifications/unread-count';
+  static String markNotificationRead(String notificationId) => '$baseUrl/notifications/$notificationId/read';
+  static const String markAllRead = '$baseUrl/notifications/mark-all-read';
+  static String deleteNotification(String notificationId) => '$baseUrl/notifications/$notificationId';
+
+  // Chat endpoints
+  static const String chatConversations = '$baseUrl/chat/conversations';
+  static String chatMessages(String conversationId) => '$baseUrl/chat/conversations/$conversationId/messages';
+  static const String chatSend = '$baseUrl/chat/send';
+  static String chatMarkRead(String conversationId) => '$baseUrl/chat/conversations/$conversationId/mark-read';
+  static const String chatStartConversation = '$baseUrl/chat/conversations/start';
+  
+  // WebSocket endpoint
+  static const String wsUrl = 'ws://192.168.31.96:8080/ws';
 }

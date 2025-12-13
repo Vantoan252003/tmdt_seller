@@ -3,6 +3,7 @@ import '../utils/app_theme.dart';
 import '../screens/seller_dashboard_screen.dart';
 import '../screens/product_management_screen.dart';
 import '../screens/order_management_screen.dart';
+import '../screens/conversations_screen.dart';
 import '../screens/profile_screen.dart';
 import '../providers/navigation_provider.dart';
 import 'package:provider/provider.dart';
@@ -20,6 +21,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     const SellerDashboardScreen(),
     const ProductManagementScreen(),
     const OrderManagementScreen(),
+    const ConversationsScreen(),
     const ProfileScreen(),
   ];
 
@@ -70,10 +72,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   index: 2,
                 ),
                 _buildNavItem(
+                  icon: Icons.chat_bubble_outline,
+                  activeIcon: Icons.chat_bubble,
+                  label: 'Tin nhắn',
+                  index: 3,
+                ),
+                _buildNavItem(
                   icon: Icons.person_outline,
                   activeIcon: Icons.person,
                   label: 'Cá nhân',
-                  index: 3,
+                  index: 4,
                 ),
               ],
             ),

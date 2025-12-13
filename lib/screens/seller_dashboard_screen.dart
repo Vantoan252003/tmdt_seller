@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/shop_service.dart';
 import '../services/stats_service.dart';
+import '../services/notification_service.dart';
 import '../models/shop.dart';
 import '../models/seller_stats.dart';
 import 'product_management_screen.dart';
@@ -8,6 +9,7 @@ import 'add_product_screen.dart';
 import 'create_shop_screen.dart';
 import 'report_screen.dart';
 import 'voucher_management_screen.dart';
+import 'notification_screen.dart';
 
 class SellerDashboardScreen extends StatefulWidget {
   const SellerDashboardScreen({super.key});
@@ -20,6 +22,7 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> with Tick
   Shop? _shop;
   SellerStats? _sellerStats;
   bool _isLoading = true;
+  int _unreadNotifications = 0;
   Map<String, dynamic> _stats = {
     'totalProducts': 0,
     'totalOrders': 0,
@@ -73,6 +76,14 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> with Tick
             };
           });
         }
+      }
+      
+      // Load unread notifications
+      final notifResult = await NotificationService.getUnreadCount();
+      if (notifResult['success'] == true) {
+        setState(() {
+          _unreadNotifications = notifResult['data'] ?? 0;
+        });
       }
     } else {
       print('Failed to load shop: ${shopResult['message']}');
@@ -278,13 +289,47 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> with Tick
                     width: 1,
                   ),
                 ),
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.notifications_outlined,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                  onPressed: () {},
+                child: Stack(
+                  children: [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.notifications_outlined,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const NotificationScreen(),
+                          ),
+                        ).then((_) => _loadData());
+                      },
+                    ),
+                    if (_unreadNotifications > 0)
+                      Positioned(
+                        right: 8,
+                        top: 8,
+                        child: Container(
+                          width: 20,
+                          height: 20,
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Center(
+                            child: Text(
+                              _unreadNotifications > 99 ? '99+' : '$_unreadNotifications',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ],
