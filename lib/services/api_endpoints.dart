@@ -1,6 +1,6 @@
 class ApiEndpoints {
   // Base URL
-  static const String baseUrl = 'http://192.168.31.96:8080/api';
+  static const String baseUrl = 'http://192.168.31.100:8080/api';
   
   // Auth endpoints
   static const String login = '$baseUrl/auth/login';
@@ -95,5 +95,5 @@ class ApiEndpoints {
   static const String chatStartConversation = '$baseUrl/chat/conversations/start';
   
   // WebSocket endpoint
-  static const String wsUrl = 'ws://192.168.31.96:8080/ws';
+  static const String wsUrl = 'ws://192.168.31.100:8080/ws';
 }

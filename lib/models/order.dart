@@ -1,3 +1,43 @@
+class OrderItem {
+  final String productId;
+  final String productName;
+  final String imageUrl;
+  final double price;
+  final int quantity;
+  final double totalPrice;
+
+  OrderItem({
+    required this.productId,
+    required this.productName,
+    required this.imageUrl,
+    required this.price,
+    required this.quantity,
+    required this.totalPrice,
+  });
+
+  factory OrderItem.fromJson(Map<String, dynamic> json) {
+    return OrderItem(
+      productId: json['productId'] ?? '',
+      productName: json['productName'] ?? '',
+      imageUrl: json['imageUrl'] ?? '',
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      quantity: json['quantity'] ?? 1,
+      totalPrice: (json['totalPrice'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'productId': productId,
+      'productName': productName,
+      'imageUrl': imageUrl,
+      'price': price,
+      'quantity': quantity,
+      'totalPrice': totalPrice,
+    };
+  }
+}
+
 class Order {
   final String orderId;
   final String userId;
@@ -17,6 +57,7 @@ class Order {
   final String? voucherCode;
   final String createdAt;
   final String updatedAt;
+  final List<OrderItem> items;
 
   Order({
     required this.orderId,
@@ -37,6 +78,7 @@ class Order {
     this.voucherCode,
     required this.createdAt,
     required this.updatedAt,
+    required this.items,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -59,6 +101,9 @@ class Order {
       voucherCode: json['voucherCode'],
       createdAt: json['createdAt'] ?? '',
       updatedAt: json['updatedAt'] ?? '',
+      items: json['items'] != null
+          ? (json['items'] as List).map((item) => OrderItem.fromJson(item)).toList()
+          : [],
     );
   }
 
@@ -82,6 +127,7 @@ class Order {
       'voucherCode': voucherCode,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
+      'items': items.map((item) => item.toJson()).toList(),
     };
   }
 

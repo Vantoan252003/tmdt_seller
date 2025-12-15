@@ -47,12 +47,12 @@ class _LoginScreenState extends State<LoginScreen> {
             backgroundColor: AppTheme.successColor,
           ),
         );
-        
+
         // Register FCM token after successful login
         try {
           final deviceType = Theme.of(context).platform == TargetPlatform.iOS ? 'iOS' : 'Android';
           final deviceId = DateTime.now().millisecondsSinceEpoch.toString();
-          
+
           await FCMService().registerToken(
             deviceType: deviceType,
             deviceId: deviceId,
@@ -61,7 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
         } catch (e) {
           print('Error registering FCM token after login: $e');
         }
-        
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
@@ -91,11 +91,15 @@ class _LoginScreenState extends State<LoginScreen> {
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const SizedBox(height: 60),
-                // Header
-                _buildHeader(),
+                const SizedBox(height: 40),
+                // Shop Icon & Branding
+                _buildShopBranding(),
+                const SizedBox(height: 40),
+
+                // Welcome Text
+                _buildWelcomeText(),
                 const SizedBox(height: 40),
 
                 // Login Form
@@ -112,27 +116,96 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildShopBranding() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ShaderMask(
-          shaderCallback: (bounds) => AppTheme.primaryGradient.createShader(bounds),
-          child: const Text(
-            'Chào mừng trở lại!',
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+        // Shop Icon with gradient background
+        Container(
+          width: 100,
+          height: 100,
+          decoration: BoxDecoration(
+            gradient: AppTheme.primaryGradient,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primaryColor.withOpacity(0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.storefront,
+            size: 50,
+            color: Colors.white,
           ),
         ),
-        const SizedBox(height: 8),
-        Text(
-          'Đăng nhập để tiếp tục mua sắm',
-          style: TextStyle(
-            fontSize: 16,
-            color: AppTheme.textSecondary,
+      
+      ],
+    );
+  }
+
+  Widget _buildWelcomeText() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.shopping_bag_outlined,
+              color: AppTheme.primaryColor,
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            ShaderMask(
+              shaderCallback: (bounds) => AppTheme.primaryGradient.createShader(bounds),
+              child: const Text(
+                'Chào mừng Seller!',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(
+              Icons.local_shipping_outlined,
+              color: AppTheme.primaryColor,
+              size: 24,
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.8),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppTheme.primaryColor.withOpacity(0.2),
+              width: 1,
+            ),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.trending_up,
+                color: AppTheme.primaryColor,
+                size: 20,
+              ),
+               SizedBox(width: 8),
+              Text(
+                'Quản lý cửa hàng, tăng doanh thu ngay!',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppTheme.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -147,21 +220,54 @@ class _LoginScreenState extends State<LoginScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: AppTheme.primaryColor.withOpacity(0.1),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
         ],
+        border: Border.all(
+          color: AppTheme.primaryColor.withOpacity(0.1),
+          width: 1,
+        ),
       ),
       child: Form(
         key: _formKey,
         child: Column(
           children: [
+            // Seller Badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: AppTheme.primaryGradient,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.verified_user,
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 6),
+                  const Text(
+                    'Đăng nhập Seller',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
             // Email Field
             _buildTextField(
               controller: _emailController,
-              label: 'Email',
-              hint: 'Nhập email của bạn',
+              label: 'Email cửa hàng',
+              hint: 'Nhập email đăng ký',
               icon: Icons.email_outlined,
               keyboardType: TextInputType.emailAddress,
               validator: (value) {
@@ -204,15 +310,21 @@ class _LoginScreenState extends State<LoginScreen> {
 
             // Login Button
             GradientButton(
-              text: _isLoading ? 'Đang đăng nhập...' : 'Đăng nhập',
+              text: _isLoading ? 'Đang đăng nhập...' : 'Đăng nhập vào cửa hàng',
               onPressed: _isLoading ? () {} : () => _handleLogin(),
               width: double.infinity,
+              icon: _isLoading ? null : Icons.login,
             ),
+
+            const SizedBox(height: 20),
+
+          
           ],
         ),
       ),
     );
   }
+
 
   Widget _buildTextField({
     required TextEditingController controller,
@@ -242,11 +354,15 @@ class _LoginScreenState extends State<LoginScreen> {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: AppTheme.primaryColor.withOpacity(0.08),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
             ],
+            border: Border.all(
+              color: AppTheme.primaryColor.withOpacity(0.1),
+              width: 1,
+            ),
           ),
           child: TextFormField(
             controller: controller,
@@ -268,31 +384,36 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildRegisterLink() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Column(
       children: [
-        Text(
-          'Chưa có tài khoản? ',
-          style: TextStyle(color: AppTheme.textSecondary),
-        ),
-        GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const RegisterScreen()),
-            );
-          },
-          child: ShaderMask(
-            shaderCallback: (bounds) => AppTheme.primaryGradient.createShader(bounds),
-            child: const Text(
-              'Đăng ký ngay',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              'Chưa có cửa hàng? ',
+              style: TextStyle(color: AppTheme.textSecondary),
+            ),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                );
+              },
+              child: ShaderMask(
+                shaderCallback: (bounds) => AppTheme.primaryGradient.createShader(bounds),
+                child: const Text(
+                  'Đăng ký ngay',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
               ),
             ),
-          ),
+          ],
         ),
+     
       ],
     );
   }

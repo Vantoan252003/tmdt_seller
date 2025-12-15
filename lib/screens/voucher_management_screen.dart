@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/voucher.dart';
 import '../services/voucher_service.dart';
+import '../utils/app_theme.dart';
 import 'create_voucher_screen.dart';
 
 class VoucherManagementScreen extends StatefulWidget {
@@ -58,15 +59,8 @@ class _VoucherManagementScreenState extends State<VoucherManagementScreen> with 
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF667EEA),
-              Color(0xFF764BA2),
-            ],
-          ),
+        decoration: BoxDecoration(
+          gradient: AppTheme.primaryGradient,
         ),
         child: SafeArea(
           child: Column(
@@ -114,7 +108,7 @@ class _VoucherManagementScreenState extends State<VoucherManagementScreen> with 
             _loadVouchers();
           }
         },
-        backgroundColor: const Color(0xFF667EEA),
+        backgroundColor: AppTheme.primaryColor,
         icon: const Icon(Icons.add),
         label: const Text('Tạo voucher'),
       ),
@@ -169,7 +163,7 @@ class _VoucherManagementScreenState extends State<VoucherManagementScreen> with 
       child: TabBar(
         controller: _tabController,
         indicator: BoxDecoration(
-          color: const Color(0xFF667EEA),
+          color: AppTheme.primaryColor,
           borderRadius: BorderRadius.circular(12),
         ),
         labelColor: Colors.white,
@@ -225,13 +219,13 @@ class _VoucherManagementScreenState extends State<VoucherManagementScreen> with 
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: isActive
-              ? [const Color(0xFF667EEA), const Color(0xFF764BA2)]
+              ? [AppTheme.primaryColor, AppTheme.secondaryColor]
               : [Colors.grey[400]!, Colors.grey[500]!],
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: (isActive ? const Color(0xFF667EEA) : Colors.grey).withOpacity(0.3),
+            color: (isActive ? AppTheme.primaryColor : Colors.grey).withOpacity(0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -288,7 +282,7 @@ class _VoucherManagementScreenState extends State<VoucherManagementScreen> with 
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: isActive ? const Color(0xFF667EEA) : Colors.grey[700],
+                                color: isActive ? AppTheme.primaryColor : Colors.grey[700],
                               ),
                             ),
                           ),

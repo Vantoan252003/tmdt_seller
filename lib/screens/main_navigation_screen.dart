@@ -49,7 +49,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -106,7 +106,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         navProvider.setIndex(index);
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
           gradient: isActive ? AppTheme.primaryGradient : null,
           borderRadius: BorderRadius.circular(12),
@@ -117,14 +117,14 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             Icon(
               isActive ? activeIcon : icon,
               color: isActive ? Colors.white : AppTheme.textLight,
-              size: 24,
+              size: 22,
             ),
           
             Text(
               label,
               style: TextStyle(
                 color: isActive ? Colors.white : AppTheme.textLight,
-                fontSize: 12,
+                fontSize: 10,
                 fontWeight: FontWeight.w500,
               ),
             ),

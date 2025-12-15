@@ -27,11 +27,13 @@ class OrderService {
         },
       );
 
+
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
         final List<dynamic> ordersJson = data['data'] ?? [];
-        final orders = ordersJson.map((json) => Order.fromJson(json)).toList();
+        final List<Order> orders = 
+          ordersJson.map((item) => Order.fromJson(item as Map<String, dynamic>)).toList();
         return {'success': true, 'data': orders};
       } else {
         return {'success': false, 'message': data['message'] ?? 'Không thể lấy danh sách đơn hàng'};
@@ -57,15 +59,26 @@ class OrderService {
         },
       );
 
+      print('📋 Order Detail Response Status: ${response.statusCode}');
+      print('📋 Order Detail Response Body: ${response.body}');
+
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['success'] == true) {
-        final order = Order.fromJson(data['data']);
-        return {'success': true, 'data': order};
+        try {
+          final order = Order.fromJson(data['data']);
+          print('✅ Order detail parsed successfully');
+          return {'success': true, 'data': order};
+        } catch (e) {
+          print('❌ Error parsing order detail: $e');
+          print('📋 Order data: ${data['data']}');
+          return {'success': false, 'message': 'Lỗi phân tích dữ liệu: $e'};
+        }
       } else {
         return {'success': false, 'message': data['message'] ?? 'Không thể lấy thông tin đơn hàng'};
       }
     } catch (e) {
+      print('❌ Exception in getOrderById: $e');
       return {'success': false, 'message': 'Lỗi kết nối: $e'};
     }
   }
