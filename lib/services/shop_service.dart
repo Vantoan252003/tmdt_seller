@@ -58,6 +58,13 @@ class ShopService {
 
       if (response.statusCode == 200 && data['success'] == true) {
         final shop = Shop.fromJson(data['data']);
+        
+        // Save shopId and sellerId to SharedPreferences for chat
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('shopId', shop.shopId);
+        await prefs.setString('sellerId', shop.sellerId);
+        await prefs.setString('shopLogo', shop.logoUrl ?? '');
+        
         return {'success': true, 'data': shop};
       } else if (response.statusCode == 404) {
         // Shop not found - user doesn't have a shop yet

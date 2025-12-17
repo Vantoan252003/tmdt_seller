@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/conversation.dart';
+import '../models/chat.dart';
 import '../utils/app_theme.dart';
 import 'package:intl/intl.dart';
 
@@ -122,7 +122,7 @@ class ConversationTile extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        _formatTime(conversation.lastMessageTime),
+                        _formatTime(conversation.lastMessageTime != null ? DateTime.parse(conversation.lastMessageTime!) : null),
                         style: TextStyle(
                           fontSize: 12,
                           color: conversation.unreadCount > 0

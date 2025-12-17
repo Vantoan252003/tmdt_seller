@@ -1,6 +1,6 @@
 class ApiEndpoints {
   // Base URL
-  static const String baseUrl = 'http://192.168.31.100:8080/api';
+  static const String baseUrl = 'http://192.168.0.104:8080/api';
   
   // Auth endpoints
   static const String login = '$baseUrl/auth/login';
@@ -88,12 +88,15 @@ class ApiEndpoints {
   static String deleteNotification(String notificationId) => '$baseUrl/notifications/$notificationId';
 
   // Chat endpoints
-  static const String chatConversations = '$baseUrl/chat/conversations';
+  static const String chatConversations = '$baseUrl/chat/seller/conversations';
   static String chatMessages(String conversationId) => '$baseUrl/chat/conversations/$conversationId/messages';
   static const String chatSend = '$baseUrl/chat/send';
   static String chatMarkRead(String conversationId) => '$baseUrl/chat/conversations/$conversationId/mark-read';
   static const String chatStartConversation = '$baseUrl/chat/conversations/start';
   
   // WebSocket endpoint
-  static const String wsUrl = 'ws://192.168.31.100:8080/ws';
+  static const String chatWebSocket = 'http://192.168.31.101:8080/ws';
+  
+  // Chat image endpoint
+  static const String chatSendImage = '$baseUrl/chat/send-image';
 }

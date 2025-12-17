@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../models/message.dart';
+import '../models/chat.dart';
 import '../utils/app_theme.dart';
 import 'package:intl/intl.dart';
 
 class MessageBubble extends StatelessWidget {
-  final Message message;
+  final ChatMessage message;
   final bool isMe;
 
   const MessageBubble({
@@ -13,7 +13,8 @@ class MessageBubble extends StatelessWidget {
     required this.isMe,
   });
 
-  String _formatTime(DateTime dateTime) {
+  String _formatTime(String timeStr) {
+    final dateTime = DateTime.parse(timeStr);
     return DateFormat('HH:mm').format(dateTime);
   }
 

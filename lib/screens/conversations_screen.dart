@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/conversation.dart';
+import '../models/chat.dart';
 import '../services/chat_service.dart';
 import '../widgets/conversation_tile.dart';
 import '../utils/app_theme.dart';
@@ -29,16 +29,15 @@ class _ConversationsScreenState extends State<ConversationsScreen> {
       _errorMessage = null;
     });
 
-    final result = await ChatService.getConversations();
-
-    if (mounted) {
+    try {
+      _conversations = await ChatService.getConversations();
       setState(() {
         _isLoading = false;
-        if (result['success']) {
-          _conversations = result['data'] as List<Conversation>;
-        } else {
-          _errorMessage = result['message'];
-        }
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.toString();
       });
     }
   }

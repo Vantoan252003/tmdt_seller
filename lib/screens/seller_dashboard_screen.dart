@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/shop_service.dart';
 import '../services/stats_service.dart';
 import '../services/notification_service.dart';
@@ -41,6 +42,14 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
       _shop = shopResult['data'];
 
       if (_shop != null) {
+        // Lưu shopId và logoUrl vào SharedPreferences để dùng cho chat
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('shopId', _shop!.shopId);
+        if (_shop!.logoUrl != null) {
+          await prefs.setString('shopLogo', _shop!.logoUrl!);
+        }
+        print('💾 Saved shopId: ${_shop!.shopId}, logoUrl: ${_shop!.logoUrl}');
+
         final statsResult = await StatsService.getSellerStats(_shop!.shopId);
         if (statsResult['success'] == true) {
           _sellerStats = statsResult['data'];
