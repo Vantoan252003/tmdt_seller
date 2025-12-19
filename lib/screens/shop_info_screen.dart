@@ -1,8 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../models/shop.dart';
 import '../services/shop_service.dart';
+import '../services/google_maps_service.dart';
+import '../services/address_service.dart';
 import '../utils/app_theme.dart';
 
 class ShopInfoScreen extends StatefulWidget {
@@ -29,6 +32,15 @@ class _ShopInfoScreenState extends State<ShopInfoScreen> {
   String? _bannerUrl;
   
   final ImagePicker _picker = ImagePicker();
+
+  // Address data
+  double? _latitude;
+  double? _longitude;
+  String _addressLine = '';
+  String _ward = '';
+  String _district = '';
+  String _city = '';
+  String _fullAddress = '';
 
   @override
   void initState() {
@@ -58,6 +70,35 @@ class _ShopInfoScreenState extends State<ShopInfoScreen> {
       _phoneController.text = _shop!.phoneNumber ?? '';
       _logoUrl = _shop!.logoUrl;
       _bannerUrl = _shop!.bannerUrl;
+
+      // Fetch shop addresses to get detailed address data
+      final addressesResult = await ShopService.getShopAddresses(_shop!.shopId);
+      if (addressesResult['success'] == true) {
+        final addresses = addressesResult['data'] as List<dynamic>;
+        if (addresses.isNotEmpty) {
+          // Use the first address or find the default one
+          Map<String, dynamic>? defaultAddress;
+          for (var addr in addresses) {
+            if (addr['isDefault'] == true) {
+              defaultAddress = addr;
+              break;
+            }
+          }
+          final address = defaultAddress ?? addresses[0];
+
+          // Populate address fields
+          _latitude = address['latitude'];
+          _longitude = address['longitude'];
+          _addressLine = address['addressLine'] ?? '';
+          _ward = address['ward'] ?? '';
+          _district = address['district'] ?? '';
+          _city = address['city'] ?? '';
+          _fullAddress = address['formattedAddress'] ?? address['addressLine'] ?? '';
+          
+          // Update the address controller to show the formatted address
+          _addressController.text = _fullAddress;
+        }
+      }
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -158,7 +199,6 @@ class _ShopInfoScreenState extends State<ShopInfoScreen> {
         shopId: _shop!.shopId,
         shopName: _shopNameController.text.trim(),
         description: _descriptionController.text.trim(),
-        address: _addressController.text.trim(),
         phoneNumber: _phoneController.text.trim(),
         logoUrl: newLogoUrl,
         bannerUrl: newBannerUrl,
@@ -252,12 +292,7 @@ class _ShopInfoScreenState extends State<ShopInfoScreen> {
                           const SizedBox(height: 16),
 
                           // Address
-                          _buildTextField(
-                            controller: _addressController,
-                            label: 'Địa chỉ',
-                            hint: 'Nhập địa chỉ cửa hàng',
-                            icon: Icons.location_on,
-                          ),
+                          _buildAddressField(),
                           const SizedBox(height: 16),
 
                           // Phone Number
@@ -437,6 +472,55 @@ class _ShopInfoScreenState extends State<ShopInfoScreen> {
     );
   }
 
+  Widget _buildAddressField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Địa chỉ',
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: () => _showShopAddressDialog(),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey[300]!),
+              borderRadius: BorderRadius.circular(12),
+              color: Colors.grey[50],
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.location_on, color: AppTheme.primaryColor),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _fullAddress.isNotEmpty 
+                        ? _fullAddress 
+                        : (_shop?.address != null && _shop!.address!.isNotEmpty 
+                            ? _shop!.address! 
+                            : 'Chọn địa chỉ cửa hàng'),
+                    style: TextStyle(
+                      color: _fullAddress.isNotEmpty || (_shop?.address != null && _shop!.address!.isNotEmpty) 
+                          ? AppTheme.textPrimary 
+                          : AppTheme.textSecondary,
+                    ),
+                  ),
+                ),
+                Icon(Icons.map, color: AppTheme.primaryColor),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
@@ -548,5 +632,666 @@ class _ShopInfoScreenState extends State<ShopInfoScreen> {
         ],
       ),
     );
+  }
+
+  void _showShopAddressDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return ShopMapAddressDialog(
+          shop: _shop,
+          initialAddress: _fullAddress,
+          initialLatitude: _latitude,
+          initialLongitude: _longitude,
+          onAddressSelected: (addressData) {
+            setState(() {
+              _latitude = addressData['latitude'];
+              _longitude = addressData['longitude'];
+              _addressLine = addressData['addressLine'];
+              _ward = addressData['ward'];
+              _district = addressData['district'];
+              _city = addressData['city'];
+              _fullAddress = addressData['fullAddress'];
+            });
+          },
+        );
+      },
+    );
+  }
+}
+
+// Shop Map Address Dialog
+class ShopMapAddressDialog extends StatefulWidget {
+  final Shop? shop;
+  final String initialAddress;
+  final double? initialLatitude;
+  final double? initialLongitude;
+  final Function(Map<String, dynamic>) onAddressSelected;
+
+  const ShopMapAddressDialog({
+    super.key,
+    this.shop,
+    required this.initialAddress,
+    this.initialLatitude,
+    this.initialLongitude,
+    required this.onAddressSelected,
+  });
+
+  @override
+  State<ShopMapAddressDialog> createState() => _ShopMapAddressDialogState();
+}
+
+class _ShopMapAddressDialogState extends State<ShopMapAddressDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _recipientNameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _searchController = TextEditingController();
+
+  GoogleMapController? _mapController;
+  final GoogleMapsService _mapsService = GoogleMapsService();
+
+  // Location data
+  double? _latitude;
+  double? _longitude;
+  String _addressLine = '';
+  String _ward = '';
+  String _district = '';
+  String _city = '';
+  String _fullAddress = '';
+
+  bool _isLoading = false;
+  bool _isLoadingLocation = false;
+  bool _isSearching = false;
+
+  List<Map<String, dynamic>> _searchResults = [];
+  Set<Marker> _markers = {};
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Initialize with shop data
+    if (widget.shop != null) {
+      _recipientNameController.text = widget.shop!.shopName;
+      _phoneController.text = widget.shop!.phoneNumber ?? '';
+    }
+
+    // Initialize with existing address data
+    if (widget.initialAddress.isNotEmpty) {
+      _fullAddress = widget.initialAddress;
+      _latitude = widget.initialLatitude;
+      _longitude = widget.initialLongitude;
+      if (_latitude != null && _longitude != null) {
+        _markers = {
+          Marker(
+            markerId: const MarkerId('selected_location'),
+            position: LatLng(_latitude!, _longitude!),
+            infoWindow: InfoWindow(
+              title: 'Địa chỉ cửa hàng',
+              snippet: _fullAddress,
+            ),
+          ),
+        };
+      }
+    } else {
+      // Get current location for new address
+      _getCurrentLocation();
+    }
+  }
+
+  Future<void> _getCurrentLocation() async {
+    print('🗺️ ShopMapAddressDialog: Getting current location...');
+    setState(() {
+      _isLoadingLocation = true;
+    });
+
+    try {
+      final position = await _mapsService.getCurrentLocation();
+      print('✅ Got GPS position: ${position.latitude}, ${position.longitude}');
+      
+      final addressData = await _mapsService.getAddressFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      print('📍 Address data: $addressData');
+
+      if (addressData['success']) {
+        print('✅ Address retrieved successfully');
+        setState(() {
+          _latitude = addressData['latitude'];
+          _longitude = addressData['longitude'];
+          _addressLine = addressData['addressLine'] ?? '';
+          _ward = addressData['ward'] ?? '';
+          _district = addressData['district'] ?? '';
+          _city = addressData['city'] ?? '';
+          _fullAddress = addressData['fullAddress'] ?? '';
+
+          _markers = {
+            Marker(
+              markerId: const MarkerId('selected_location'),
+              position: LatLng(_latitude!, _longitude!),
+              infoWindow: InfoWindow(
+                title: 'Vị trí hiện tại',
+                snippet: _fullAddress,
+              ),
+            ),
+          };
+        });
+
+        // Move camera to current location
+        _mapController?.animateCamera(
+          CameraUpdate.newLatLngZoom(
+            LatLng(_latitude!, _longitude!),
+            16,
+          ),
+        );
+      } else {
+        print('❌ Address retrieval failed: ${addressData['message']}');
+      }
+    } catch (e) {
+      print('❌ Error getting location: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Không thể lấy vị trí: $e'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isLoadingLocation = false;
+      });
+      print('🗺️ ShopMapAddressDialog: Loading location finished');
+      print('Current state - Lat: $_latitude, Lng: $_longitude, Address: $_fullAddress');
+    }
+  }
+
+  Future<void> _searchPlaces(String query) async {
+    if (query.isEmpty) {
+      setState(() {
+        _searchResults = [];
+        _isSearching = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+    });
+
+    try {
+      final results = await _mapsService.searchPlaces(query);
+      setState(() {
+        _searchResults = results;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi tìm kiếm: $e'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isSearching = false;
+      });
+    }
+  }
+
+  Future<void> _selectPlace(String placeId) async {
+    print('🗺️ Selecting place with ID: $placeId');
+    setState(() {
+      _isLoadingLocation = true;
+      _searchResults = [];
+      _searchController.clear();
+    });
+
+    try {
+      final placeDetails = await _mapsService.getPlaceDetails(placeId);
+      print('📍 Place details result: $placeDetails');
+
+      if (placeDetails['success']) {
+        print('✅ Place details retrieved successfully');
+        setState(() {
+          _latitude = placeDetails['latitude'];
+          _longitude = placeDetails['longitude'];
+          _addressLine = placeDetails['addressLine'] ?? '';
+          _ward = placeDetails['ward'] ?? '';
+          _district = placeDetails['district'] ?? '';
+          _city = placeDetails['city'] ?? '';
+          _fullAddress = placeDetails['fullAddress'] ?? '';
+
+          _markers = {
+            Marker(
+              markerId: const MarkerId('selected_location'),
+              position: LatLng(_latitude!, _longitude!),
+              infoWindow: InfoWindow(
+                title: 'Địa chỉ đã chọn',
+                snippet: _fullAddress,
+              ),
+            ),
+          };
+        });
+
+        // Move camera to selected location
+        _mapController?.animateCamera(
+          CameraUpdate.newLatLngZoom(
+            LatLng(_latitude!, _longitude!),
+            16,
+          ),
+        );
+      } else {
+        print('❌ Place details retrieval failed');
+      }
+    } catch (e) {
+      print('❌ Error selecting place: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi khi chọn địa điểm: $e'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isLoadingLocation = false;
+      });
+    }
+  }
+
+  Future<void> _onMapTap(LatLng position) async {
+    setState(() {
+      _isLoadingLocation = true;
+    });
+
+    try {
+      final addressData = await _mapsService.getAddressFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      if (addressData['success']) {
+        setState(() {
+          _latitude = addressData['latitude'];
+          _longitude = addressData['longitude'];
+          _addressLine = addressData['addressLine'] ?? '';
+          _ward = addressData['ward'] ?? '';
+          _district = addressData['district'] ?? '';
+          _city = addressData['city'] ?? '';
+          _fullAddress = addressData['fullAddress'] ?? '';
+
+          _markers = {
+            Marker(
+              markerId: const MarkerId('selected_location'),
+              position: LatLng(_latitude!, _longitude!),
+              infoWindow: InfoWindow(
+                title: 'Địa chỉ đã chọn',
+                snippet: _fullAddress,
+              ),
+            ),
+          };
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi khi lấy địa chỉ: $e'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isLoadingLocation = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _recipientNameController.dispose();
+    _phoneController.dispose();
+    _searchController.dispose();
+    _mapController?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Container(
+        width: double.maxFinite,
+        height: MediaQuery.of(context).size.height * 0.9,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            // Header
+            Row(
+              children: [
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close),
+                ),
+                const Expanded(
+                  child: Text(
+                    'Chọn địa chỉ cửa hàng',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(width: 48), // Balance for close button
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Search bar
+            TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Tìm kiếm địa điểm...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _isSearching
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: Colors.grey[50],
+              ),
+              onChanged: _searchPlaces,
+            ),
+
+            // Search results
+            if (_searchResults.isNotEmpty)
+              Expanded(
+                flex: 1,
+                child: ListView.builder(
+                  itemCount: _searchResults.length,
+                  itemBuilder: (context, index) {
+                    final result = _searchResults[index];
+                    return ListTile(
+                      leading: const Icon(Icons.location_on),
+                      title: Text(result['description'] ?? ''),
+                      onTap: () => _selectPlace(result['place_id']),
+                    );
+                  },
+                ),
+              )
+            else
+              // Map
+              Expanded(
+                flex: 3,
+                child: Stack(
+                  children: [
+                    GoogleMap(
+                      initialCameraPosition: CameraPosition(
+                        target: _latitude != null && _longitude != null
+                            ? LatLng(_latitude!, _longitude!)
+                            : const LatLng(10.8231, 106.6297), // Default to Ho Chi Minh City
+                        zoom: 12,
+                      ),
+                      onMapCreated: (controller) {
+                        _mapController = controller;
+                        if (_latitude != null && _longitude != null) {
+                          _mapController?.animateCamera(
+                            CameraUpdate.newLatLngZoom(
+                              LatLng(_latitude!, _longitude!),
+                              16,
+                            ),
+                          );
+                        }
+                      },
+                      markers: _markers,
+                      onTap: _onMapTap,
+                      myLocationEnabled: true,
+                      myLocationButtonEnabled: true,
+                    ),
+                    if (_isLoadingLocation)
+                      const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                  ],
+                ),
+              ),
+
+            const SizedBox(height: 16),
+
+            // Form
+            Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  // Recipient Name (Shop Name)
+                  TextFormField(
+                    controller: _recipientNameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Tên cửa hàng',
+                      prefixIcon: Icon(Icons.store),
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Vui lòng nhập tên cửa hàng';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Phone
+                  TextFormField(
+                    controller: _phoneController,
+                    decoration: const InputDecoration(
+                      labelText: 'Số điện thoại',
+                      prefixIcon: Icon(Icons.phone),
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.phone,
+                    validator: (value) {
+                      if (value != null && value.isNotEmpty) {
+                        if (!RegExp(r'^[0-9]{10,11}$').hasMatch(value)) {
+                          return 'Số điện thoại không hợp lệ';
+                        }
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Address display
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.location_on, color: Colors.grey),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _fullAddress.isNotEmpty
+                                ? _fullAddress
+                                : 'Chưa chọn địa chỉ',
+                            style: TextStyle(
+                              color: _fullAddress.isNotEmpty
+                                  ? Colors.black
+                                  : Colors.grey,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Buttons
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text('Hủy'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _saveAddress,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Text('Lưu địa chỉ'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _saveAddress() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    if (_latitude == null || _longitude == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng chọn địa chỉ trên bản đồ'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // First, get existing shop addresses
+      final existingAddressesResult = await ShopService.getShopAddresses(widget.shop!.shopId);
+      
+      if (existingAddressesResult['success'] == true) {
+        final existingAddresses = existingAddressesResult['data'] as List<dynamic>;
+        
+        // Delete all existing shop addresses
+        final addressService = AddressService();
+        for (var address in existingAddresses) {
+          final addressId = address['addressId'] ?? address['id'];
+          if (addressId != null) {
+            try {
+              await addressService.deleteAddress(addressId.toString());
+              print('Deleted existing shop address: $addressId');
+            } catch (deleteError) {
+              print('Error deleting address $addressId: $deleteError');
+              // Continue with other deletions
+            }
+          }
+        }
+      }
+
+      // Now create the new shop address
+      final result = await ShopService.updateShopAddress(
+        shopId: widget.shop!.shopId,
+        recipientName: _recipientNameController.text.trim(),
+        phoneNumber: _phoneController.text.trim(),
+        addressLine: _addressLine,
+        ward: _ward,
+        district: _district,
+        city: _city,
+        latitude: _latitude!,
+        longitude: _longitude!,
+        formattedAddress: _fullAddress,
+      );
+
+      if (result['success'] == true) {
+        // Pass the address data back
+        widget.onAddressSelected({
+          'latitude': _latitude,
+          'longitude': _longitude,
+          'addressLine': _addressLine,
+          'ward': _ward,
+          'district': _district,
+          'city': _city,
+          'fullAddress': _fullAddress,
+        });
+
+        if (mounted) {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Cập nhật địa chỉ thành công'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message'] ?? 'Lỗi cập nhật địa chỉ'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 }

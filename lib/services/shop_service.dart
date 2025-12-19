@@ -222,4 +222,84 @@ class ShopService {
       return {'success': false, 'message': 'Lỗi kết nối: $e'};
     }
   }
+
+  // Update shop address
+  static Future<Map<String, dynamic>> updateShopAddress({
+    required String shopId,
+    required String recipientName,
+    required String phoneNumber,
+    required String addressLine,
+    required String ward,
+    required String district,
+    required String city,
+    required double latitude,
+    required double longitude,
+    required String formattedAddress,
+  }) async {
+    try {
+      final token = await _getToken();
+      if (token == null) {
+        return {'success': false, 'message': 'Vui lòng đăng nhập lại'};
+      }
+
+      final body = {
+        'recipientName': recipientName,
+        'phoneNumber': phoneNumber,
+        'addressLine': addressLine,
+        'ward': ward,
+        'district': district,
+        'city': city,
+        'latitude': latitude,
+        'longitude': longitude,
+        'formattedAddress': formattedAddress,
+      };
+
+      final response = await http.post(
+        Uri.parse(ApiEndpoints.shopAddress(shopId)),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(body),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        return {'success': true, 'data': data['data'], 'message': data['message']};
+      } else {
+        return {'success': false, 'message': data['message'] ?? 'Không thể cập nhật địa chỉ cửa hàng'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Lỗi kết nối: $e'};
+    }
+  }
+
+  // Get shop addresses
+  static Future<Map<String, dynamic>> getShopAddresses(String shopId) async {
+    try {
+      final token = await _getToken();
+      if (token == null) {
+        return {'success': false, 'message': 'Vui lòng đăng nhập lại'};
+      }
+
+      final response = await http.get(
+        Uri.parse(ApiEndpoints.shopAddress(shopId)),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        return {'success': true, 'data': data['data']};
+      } else {
+        return {'success': false, 'message': data['message'] ?? 'Không thể lấy địa chỉ cửa hàng'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Lỗi kết nối: $e'};
+    }
+  }
 }

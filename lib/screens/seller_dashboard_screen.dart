@@ -14,6 +14,7 @@ import 'report_screen.dart';
 import 'voucher_management_screen.dart';
 import 'notification_screen.dart';
 import 'order_management_screen.dart';
+import 'address_screen.dart';
 
 class SellerDashboardScreen extends StatefulWidget {
   const SellerDashboardScreen({super.key});
@@ -190,140 +191,102 @@ class _SellerDashboardScreenState extends State<SellerDashboardScreen> {
       backgroundColor: Colors.white,
       elevation: 0,
       flexibleSpace: FlexibleSpaceBar(
-        background: Container(
-          decoration: BoxDecoration(
-            image: _shop?.bannerUrl != null
-                ? DecorationImage(
-                    image: NetworkImage(_shop!.bannerUrl!),
-                    fit: BoxFit.cover,
-                  )
-                : null,
-            gradient: _shop?.bannerUrl == null
-                ? AppTheme.primaryGradient
-                : null,
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 50,
-                            height: 50,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(12),
-                              image: _shop?.logoUrl != null
-                                  ? DecorationImage(
-                                      image: NetworkImage(_shop!.logoUrl!),
-                                      fit: BoxFit.cover,
+        background: Stack(
+          fit: StackFit.expand,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                image: _shop?.bannerUrl != null
+                    ? DecorationImage(
+                        image: NetworkImage(_shop!.bannerUrl!),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+                gradient: _shop?.bannerUrl == null
+                    ? AppTheme.primaryGradient
+                    : null,
+              ),
+            ),
+            Container(
+              color: AppTheme.primaryColor.withOpacity(0.8),
+            ),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 50,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                                image: _shop?.logoUrl != null
+                                    ? DecorationImage(
+                                        image: NetworkImage(_shop!.logoUrl!),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : null,
+                              ),
+                              child: _shop?.logoUrl == null
+                                  ? const Icon(
+                                      Icons.store,
+                                      color: Colors.white,
+                                      size: 24,
                                     )
                                   : null,
                             ),
-                            child: _shop?.logoUrl == null
-                                ? const Icon(
-                                    Icons.store,
+                            const SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _shop?.shopName ?? 'Cửa hàng',
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
                                     color: Colors.white,
-                                    size: 24,
-                                  )
-                                : null,
-                          ),
-                          const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _shop?.shopName ?? 'Cửa hàng',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              Text(
-                                'Đang hoạt động',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.white.withOpacity(0.8),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      Stack(
-                        children: [
-                          IconButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const NotificationScreen(),
-                                ),
-                              );
-                            },
-                            icon: const Icon(
-                              Icons.notifications_outlined,
-                              color: Colors.white,
-                              size: 28,
-                            ),
-                          ),
-                          if (_unreadNotifications > 0)
-                            Positioned(
-                              right: 8,
-                              top: 8,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
-                                constraints: const BoxConstraints(
-                                  minWidth: 18,
-                                  minHeight: 18,
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    _unreadNotifications > 99
-                                        ? '99+'
-                                        : _unreadNotifications.toString(),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
                                   ),
                                 ),
-                              ),
+                                Text(
+                                  'Đang hoạt động',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white.withOpacity(0.8),
+                                  ),
+                                ),
+                              ],
                             ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  Row(
-                    children: [
-                      _buildHeaderStat(
-                        'Doanh thu tháng này',
-                        '${NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(_sellerStats?.overview.monthRevenue ?? 0)}',
-                      ),
-                      const SizedBox(width: 24),
-                      _buildHeaderStat(
-                        'Đơn hàng chờ xử lý',
-                        '${_sellerStats?.overview.pendingOrders ?? 0}',
-                      ),
-                    ],
-                  ),
-                ],
+                          ],
+                        ),
+                        
+                      ],
+                    ),
+                    const Spacer(),
+                    Row(
+                      children: [
+                        _buildHeaderStat(
+                          'Doanh thu tháng này',
+                          '${NumberFormat.currency(locale: 'vi_VN', symbol: '₫').format(_sellerStats?.overview.monthRevenue ?? 0)}',
+                        ),
+                        const SizedBox(width: 24),
+                        _buildHeaderStat(
+                          'Đơn hàng chờ xử lý',
+                          '${_sellerStats?.overview.pendingOrders ?? 0}',
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
